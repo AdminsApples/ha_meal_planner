@@ -13,7 +13,7 @@ app = FastAPI(title="Meal Planner")
 templates = Jinja2Templates(directory="templates")
 
 # Ingress prefix (HA sets INGRESS_PATH). We don't need perfect routing here, but it helps with links.
-INGRESS_PATH = os.environ.get("MEALPLANNER_INGRESS_PATH", "/").rstrip("/") or ""
+INGRESS_PATH = os.environ.get("MEALPLANNER_INGRESS_PATH", "").rstrip("/")
 
 
 def _round_qty(qty: float, rounding: str) -> float:
