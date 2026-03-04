@@ -1,6 +1,7 @@
 import os
 import math
 from datetime import date, timedelta
+from typing import Optional
 
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
@@ -64,12 +65,35 @@ def ui_home(request: Request):
     )
 
 
+# --------------------
+# Meals UI
+# --------------------
 @app.get("/meals", response_class=HTMLResponse)
-def ui_meals(request: Request):
+def ui_meals(request: Request, meal_id: Optional[int] = None):
+    """
+    Shows meals + ingredients and (optionally) an ingredient editor for the selected meal.
+    """
     base = ingress_base(request)
+
     with get_db() as con:
         meals = con.execute("SELECT * FROM meals ORDER BY name").fetchall()
         ingredients = con.execute("SELECT * FROM ingredients ORDER BY name").fetchall()
+
+        selected_meal = None
+        ingredient_amounts: dict[int, float] = {}
+
+        if meal_id:
+            selected_meal = con.execute("SELECT * FROM meals WHERE id=?", (meal_id,)).fetchone()
+            rows = con.execute(
+                """
+                SELECT ingredient_id, amount_per_person
+                FROM meal_ingredients
+                WHERE meal_id=?
+                """,
+                (meal_id,),
+            ).fetchall()
+            ingredient_amounts = {int(r["ingredient_id"]): float(r["amount_per_person"]) for r in rows}
+
     return templates.TemplateResponse(
         "meals.html",
         {
@@ -77,6 +101,8 @@ def ui_meals(request: Request):
             "ingress": base,
             "meals": meals,
             "ingredients": ingredients,
+            "selected_meal": selected_meal,
+            "ingredient_amounts": ingredient_amounts,
         },
     )
 
@@ -112,6 +138,64 @@ def ui_ingredients_add(
     return RedirectResponse(url=f"{base}/meals", status_code=303)
 
 
+@app.post("/meal_ingredients/save")
+async def ui_meal_ingredients_save(request: Request):
+    """
+    Save ALL ingredient amounts for a meal in one go.
+    Form fields: meal_id, amount_<ingredientId>=<float or blank>
+    - blank deletes the ingredient from the meal
+    - number upserts it
+    """
+    base = ingress_base(request)
+    form = await request.form()
+
+    meal_id_raw = form.get("meal_id")
+    if not meal_id_raw:
+        return RedirectResponse(url=f"{base}/meals", status_code=303)
+
+    meal_id = int(meal_id_raw)
+
+    updates: list[tuple[int, float]] = []
+    deletes: list[int] = []
+
+    for key, val in form.items():
+        if not key.startswith("amount_"):
+            continue
+        ing_id = int(key.split("_", 1)[1])
+        v = (val or "").strip()
+
+        if v == "":
+            deletes.append(ing_id)
+        else:
+            try:
+                amt = float(v)
+                updates.append((ing_id, amt))
+            except ValueError:
+                # ignore invalid
+                pass
+
+    with get_db() as con:
+        for ing_id in deletes:
+            con.execute(
+                "DELETE FROM meal_ingredients WHERE meal_id=? AND ingredient_id=?",
+                (meal_id, ing_id),
+            )
+
+        for ing_id, amt in updates:
+            con.execute(
+                """
+                INSERT INTO meal_ingredients(meal_id, ingredient_id, amount_per_person)
+                VALUES(?,?,?)
+                ON CONFLICT(meal_id, ingredient_id)
+                DO UPDATE SET amount_per_person=excluded.amount_per_person
+                """,
+                (meal_id, ing_id, amt),
+            )
+
+    return RedirectResponse(url=f"{base}/meals?meal_id={meal_id}", status_code=303)
+
+
+# (Optional) keep this legacy single-set endpoint in case anything still calls it.
 @app.post("/meal_ingredient/set")
 def ui_meal_ingredient_set(
     request: Request,
@@ -130,9 +214,12 @@ def ui_meal_ingredient_set(
             (meal_id, ingredient_id, amount_per_person),
         )
     base = ingress_base(request)
-    return RedirectResponse(url=f"{base}/meals", status_code=303)
+    return RedirectResponse(url=f"{base}/meals?meal_id={meal_id}", status_code=303)
 
 
+# --------------------
+# Planner UI
+# --------------------
 @app.get("/planner", response_class=HTMLResponse)
 def ui_planner(request: Request, start: str | None = None):
     base = ingress_base(request)
@@ -141,7 +228,6 @@ def ui_planner(request: Request, start: str | None = None):
     if start:
         start_date = date.fromisoformat(start)
     else:
-        # Start from Monday of current week
         today = date.today()
         start_date = today - timedelta(days=today.weekday())
 
@@ -198,8 +284,8 @@ def ui_planner_set(
             """,
             (day, slot, meal_id if meal_id else None, int(servings)),
         )
+
     base = ingress_base(request)
-    # Keep week view stable by using the selected day as the "start" anchor
     return RedirectResponse(url=f"{base}/planner?start={day}", status_code=303)
 
 
@@ -288,3 +374,8 @@ def api_shopping_list(weeks: int = 1, start: str | None = None):
     ensure_plan_rows_for_week(start_date, weeks * 7)
     items = _shopping_aggregate(start_date, weeks * 7)
     return {"start": start_date.isoformat(), "weeks": weeks, "items": items}
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
