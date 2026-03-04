@@ -41,7 +41,6 @@ def _round_qty(qty: float, rounding: str) -> float:
 
 
 def _fmt_qty(qty: float) -> str:
-    # Make 2.0 show as 2
     if abs(qty - int(qty)) < 1e-9:
         return str(int(qty))
     return f"{qty:.2f}".rstrip("0").rstrip(".")
@@ -49,7 +48,6 @@ def _fmt_qty(qty: float) -> str:
 
 @app.on_event("startup")
 def startup():
-    # idempotent
     init_db(default_slots=["breakfast", "lunch", "dinner"])
 
 
@@ -59,10 +57,7 @@ def startup():
 @app.get("/", response_class=HTMLResponse)
 def ui_home(request: Request):
     base = ingress_base(request)
-    return templates.TemplateResponse(
-        "index.html",
-        {"request": request, "ingress": base},
-    )
+    return templates.TemplateResponse("index.html", {"request": request, "ingress": base})
 
 
 # --------------------
@@ -70,9 +65,6 @@ def ui_home(request: Request):
 # --------------------
 @app.get("/meals", response_class=HTMLResponse)
 def ui_meals(request: Request, meal_id: Optional[int] = None):
-    """
-    Shows meals + ingredients and (optionally) an ingredient editor for the selected meal.
-    """
     base = ingress_base(request)
 
     with get_db() as con:
@@ -108,11 +100,7 @@ def ui_meals(request: Request, meal_id: Optional[int] = None):
 
 
 @app.post("/meals/add")
-def ui_meals_add(
-    request: Request,
-    name: str = Form(...),
-    notes: str = Form(""),
-):
+def ui_meals_add(request: Request, name: str = Form(...), notes: str = Form("")):
     with get_db() as con:
         con.execute(
             "INSERT OR IGNORE INTO meals(name, notes) VALUES(?,?)",
@@ -143,8 +131,8 @@ async def ui_meal_ingredients_save(request: Request):
     """
     Save ALL ingredient amounts for a meal in one go.
     Form fields: meal_id, amount_<ingredientId>=<float or blank>
-    - blank deletes the ingredient from the meal
-    - number upserts it
+      - blank deletes the ingredient from the meal
+      - number upserts it
     """
     base = ingress_base(request)
     form = await request.form()
@@ -171,7 +159,6 @@ async def ui_meal_ingredients_save(request: Request):
                 amt = float(v)
                 updates.append((ing_id, amt))
             except ValueError:
-                # ignore invalid
                 pass
 
     with get_db() as con:
@@ -192,28 +179,6 @@ async def ui_meal_ingredients_save(request: Request):
                 (meal_id, ing_id, amt),
             )
 
-    return RedirectResponse(url=f"{base}/meals?meal_id={meal_id}", status_code=303)
-
-
-# (Optional) keep this legacy single-set endpoint in case anything still calls it.
-@app.post("/meal_ingredient/set")
-def ui_meal_ingredient_set(
-    request: Request,
-    meal_id: int = Form(...),
-    ingredient_id: int = Form(...),
-    amount_per_person: float = Form(...),
-):
-    with get_db() as con:
-        con.execute(
-            """
-            INSERT INTO meal_ingredients(meal_id, ingredient_id, amount_per_person)
-            VALUES(?,?,?)
-            ON CONFLICT(meal_id, ingredient_id)
-            DO UPDATE SET amount_per_person=excluded.amount_per_person
-            """,
-            (meal_id, ingredient_id, amount_per_person),
-        )
-    base = ingress_base(request)
     return RedirectResponse(url=f"{base}/meals?meal_id={meal_id}", status_code=303)
 
 

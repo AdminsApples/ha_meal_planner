@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
+
 <div class="grid grid2">
   <div class="card">
     <h3>Add Meal</h3>
@@ -17,7 +18,14 @@
     {% else %}
       <ul>
         {% for m in meals %}
-          <li><span class="pill">{{ m["id"] }}</span> {{ m["name"] }}</li>
+          <li>
+            <a href="{{ ingress }}/meals?meal_id={{ m['id'] }}">
+              {{ m["name"] }}
+            </a>
+            {% if selected_meal and selected_meal["id"] == m["id"] %}
+              <span class="muted"> (editing)</span>
+            {% endif %}
+          </li>
         {% endfor %}
       </ul>
     {% endif %}
@@ -29,12 +37,15 @@
       <div class="grid">
         <input name="name" placeholder="Ingredient name (e.g. Frozen pizza)" required />
         <input name="unit" placeholder="Unit (count, g, ml...)" value="count" />
+
+        <label class="muted">Rounding rule</label>
         <select name="rounding">
-          <option value="none">none</option>
-          <option value="ceil_int">ceil_int (for count)</option>
-          <option value="ceil_step:50">ceil_step:50</option>
-          <option value="round_step:50">round_step:50</option>
+          <option value="none">No rounding</option>
+          <option value="ceil_int">Round up to whole number (best for items like pizzas)</option>
+          <option value="ceil_step:50">Round up to nearest 50 (grams/ml)</option>
+          <option value="round_step:50">Round to nearest 50 (grams/ml)</option>
         </select>
+
         <button type="submit">Add ingredient</button>
       </div>
     </form>
@@ -45,7 +56,7 @@
     {% else %}
       <ul>
         {% for i in ingredients %}
-          <li>{{ i["name"] }} <span class="muted">({{ i["unit"] }}, {{ i["rounding"] }})</span></li>
+          <li>{{ i["name"] }} <span class="muted">({{ i["unit"] }})</span></li>
         {% endfor %}
       </ul>
     {% endif %}
@@ -53,28 +64,52 @@
 </div>
 
 <div class="card">
-  <h3>Set Ingredient Amount Per Person (per meal)</h3>
-  <p class="muted">Example: Meal “Frozen pizza” + Ingredient “Frozen pizza” amount per person = 1 (count).</p>
+  <h3>Edit ingredients for a meal</h3>
+  <p class="muted">
+    Pick a meal on the left, then set amounts per person for any ingredients.
+    Leave blank to remove from the meal.
+  </p>
 
-  <form method="post" action="{{ ingress }}/meal_ingredient/set">
-    <div class="grid">
-      <select name="meal_id" required>
-        <option value="">Select meal…</option>
-        {% for m in meals %}
-          <option value="{{ m['id'] }}">{{ m["name"] }}</option>
-        {% endfor %}
-      </select>
+  {% if not selected_meal %}
+    <p class="muted">Select a meal above to edit its ingredients.</p>
+  {% else %}
+    <h4 style="margin-top: 8px;">Meal: {{ selected_meal["name"] }}</h4>
 
-      <select name="ingredient_id" required>
-        <option value="">Select ingredient…</option>
-        {% for i in ingredients %}
-          <option value="{{ i['id'] }}">{{ i["name"] }} ({{ i["unit"] }})</option>
-        {% endfor %}
-      </select>
+    <form method="post" action="{{ ingress }}/meal_ingredients/save">
+      <input type="hidden" name="meal_id" value="{{ selected_meal['id'] }}"/>
 
-      <input name="amount_per_person" type="number" step="0.01" placeholder="Amount per person" required />
-      <button type="submit">Save</button>
-    </div>
-  </form>
+      <table>
+        <thead>
+          <tr>
+            <th>Ingredient</th>
+            <th>Unit</th>
+            <th>Amount per person</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for i in ingredients %}
+            <tr>
+              <td>{{ i["name"] }}</td>
+              <td class="muted">{{ i["unit"] }}</td>
+              <td>
+                <input
+                  name="amount_{{ i['id'] }}"
+                  type="number"
+                  step="0.01"
+                  placeholder="(blank = not used)"
+                  value="{% if ingredient_amounts.get(i['id']) is not none %}{{ ingredient_amounts.get(i['id']) }}{% endif %}"
+                />
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <div style="margin-top:12px;">
+        <button type="submit">Save all ingredients for this meal</button>
+      </div>
+    </form>
+  {% endif %}
 </div>
+
 {% endblock %}
