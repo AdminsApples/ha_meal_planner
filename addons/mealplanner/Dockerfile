@@ -1,15 +1,19 @@
-FROM python:3.12-slim
+ARG BUILD_FROM
+FROM $BUILD_FROM
+
+# Home Assistant add-on base includes bashio + with-contenv
+
+RUN apk add --no-cache python3 py3-pip
 
 WORKDIR /app
 
 COPY app/requirements.txt /app/requirements.txt
-RUN pip install --no-cache-dir -r /app/requirements.txt
-
-COPY run.sh /run.sh
-RUN chmod +x /run.sh
+RUN pip3 install --no-cache-dir -r /app/requirements.txt
 
 COPY app /app
+COPY run.sh /run.sh
+
+RUN chmod +x /run.sh
 
 EXPOSE 8099
-
 CMD ["/run.sh"]
