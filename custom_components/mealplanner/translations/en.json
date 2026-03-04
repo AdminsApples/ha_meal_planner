@@ -1,0 +1,14 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Meal Planner",
+        "description": "Connect to the Meal Planner add-on API.",
+        "data": {
+          "base_url": "Base URL",
+          "slot": "Slot (breakfast/lunch/dinner)"
+        }
+      }
+    }
+  }
+}

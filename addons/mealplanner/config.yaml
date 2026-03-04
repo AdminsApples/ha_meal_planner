@@ -1,0 +1,38 @@
+name: Meal Planner
+slug: mealplanner
+description: Meal planner with meals, ingredients-per-person, planner and shopping list.
+version: "0.1.0"
+url: "https://example.local/mealplanner"
+arch:
+  - amd64
+  - aarch64
+  - armv7
+  - armhf
+init: false
+startup: services
+ingress: true
+ingress_port: 8099
+panel_icon: mdi:food
+panel_title: Meal Planner
+homeassistant_api: true
+hassio_api: true
+
+ports:
+  8099/tcp: 8099
+
+options:
+  timezone: "Europe/London"
+  default_slots:
+    - breakfast
+    - lunch
+    - dinner
+schema:
+  timezone: str
+  default_slots:
+    - str
+
+map:
+  - data:rw
+
+environment:
+  LOG_LEVEL: info

@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Meal Planner</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; background: #0b0f14; color: #e6edf3; }
+    a { color: #7ee787; text-decoration: none; }
+    header { padding: 16px; background: #111827; border-bottom: 1px solid #1f2937; }
+    header nav a { margin-right: 14px; }
+    main { padding: 16px; max-width: 1100px; margin: 0 auto; }
+    .card { background: #0f172a; border: 1px solid #1f2937; border-radius: 14px; padding: 14px; margin-bottom: 14px; }
+    .grid { display: grid; gap: 12px; }
+    .grid2 { grid-template-columns: 1fr 1fr; }
+    input, select, button, textarea { background: #0b1220; border: 1px solid #243042; color: #e6edf3; border-radius: 10px; padding: 10px; }
+    button { cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 10px; border-bottom: 1px solid #1f2937; vertical-align: top; }
+    .muted { color: #9aa4b2; font-size: 0.92rem; }
+    .pill { display: inline-block; padding: 3px 10px; border: 1px solid #243042; border-radius: 999px; margin-right: 6px; }
+  </style>
+</head>
+<body>
+<header>
+  <nav>
+    <a href="{{ ingress }}/">Home</a>
+    <a href="{{ ingress }}/meals">Meals</a>
+    <a href="{{ ingress }}/planner">Planner</a>
+  </nav>
+</header>
+<main>
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>

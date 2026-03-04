@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <h2>Meal Planner</h2>
+  <p class="muted">Manage meals + ingredients per person, plan your week, and generate shopping lists.</p>
+</div>
+
+<div class="grid grid2">
+  <div class="card">
+    <h3>Meals & Ingredients</h3>
+    <p class="muted">Create meals, define ingredient units, and set amounts per person.</p>
+    <a href="{{ ingress }}/meals">Open Meals</a>
+  </div>
+  <div class="card">
+    <h3>Weekly Planner</h3>
+    <p class="muted">Assign meals to days, set servings per meal, and keep it tidy.</p>
+    <a href="{{ ingress }}/planner">Open Planner</a>
+  </div>
+</div>
+{% endblock %}

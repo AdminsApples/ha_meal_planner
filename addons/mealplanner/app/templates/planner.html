@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <h2>Weekly Planner</h2>
+  <p class="muted">Assign meals to each day/slot and set servings.</p>
+</div>
+
+<div class="card">
+  <table>
+    <thead>
+      <tr>
+        <th>Slot</th>
+        {% for d in days %}
+          <th>
+            {{ d.strftime("%a") }}<br>
+            <span class="muted">{{ d.isoformat() }}</span>
+          </th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for slot in slots %}
+        <tr>
+          <td><strong>{{ slot }}</strong></td>
+          {% for d in days %}
+            {% set day_key = d.isoformat() %}
+            {% set cell = plan.get(day_key, {}).get(slot) %}
+            <td>
+              <form method="post" action="{{ ingress }}/planner/set" class="grid" style="gap:8px;">
+                <input type="hidden" name="day" value="{{ day_key }}"/>
+                <input type="hidden" name="slot" value="{{ slot }}"/>
+
+                <select name="meal_id">
+                  <option value="">(none)</option>
+                  {% for m in meals %}
+                    <option value="{{ m['id'] }}"
+                      {% if cell and cell['meal_id'] == m['id'] %} selected {% endif %}
+                    >{{ m["name"] }}</option>
+                  {% endfor %}
+                </select>
+
+                <div class="muted">Servings</div>
+                <input name="servings" type="number" min="1" max="20"
+                       value="{% if cell %}{{ cell['servings'] }}{% else %}2{% endif %}"/>
+
+                <button type="submit">Save</button>
+
+                {% if cell and cell['meal_name'] %}
+                  <div class="muted">Now: {{ cell['meal_name'] }}</div>
+                {% endif %}
+              </form>
+            </td>
+          {% endfor %}
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h3>Shopping List API (for HA integration)</h3>
+  <p class="muted">The integration will call <code>/api/shopping_list?weeks=1</code> or <code>?weeks=2</code>.</p>
+</div>
+{% endblock %}
