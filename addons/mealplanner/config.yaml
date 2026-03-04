@@ -1,7 +1,7 @@
 name: Meal Planner
 slug: mealplanner
 description: Meal planner with meals, ingredients-per-person, planner and shopping list.
-version: "0.1.0"
+version: "0.2.0"
 url: "https://example.local/mealplanner"
 arch:
   - amd64
