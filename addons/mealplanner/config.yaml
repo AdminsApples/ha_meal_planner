@@ -1,7 +1,7 @@
 name: Meal Planner
 slug: mealplanner
 description: Meal planner with meals, ingredients-per-person, planner and shopping list.
-version: "0.2.0"
+version: "0.3.0"
 url: "https://example.local/mealplanner"
 arch:
   - amd64
@@ -36,9 +36,3 @@ map:
 
 environment:
   LOG_LEVEL: info
-  
-build_from:
-  amd64: ghcr.io/home-assistant/amd64-base:3.20
-  aarch64: ghcr.io/home-assistant/aarch64-base:3.20
-  armv7: ghcr.io/home-assistant/armv7-base:3.20
-  armhf: ghcr.io/home-assistant/armhf-base:3.20
