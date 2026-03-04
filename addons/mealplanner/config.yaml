@@ -1,8 +1,8 @@
 name: Meal Planner
 slug: mealplanner
-description: Meal planner with meals, ingredients-per-person, planner and shopping list.
-version: "0.3.0"
-url: "https://example.local/mealplanner"
+description: Meal planner add-on with Ingress UI, weekly schedule, today/tomorrow entities, and shopping list generation.
+version: "0.4.0"
+url: "https://github.com/AdminsApples/ha_meal_planner"
 arch:
   - amd64
   - aarch64
@@ -10,29 +10,59 @@ arch:
   - armhf
 init: false
 startup: services
+
+# Ingress (adds sidebar page)
 ingress: true
 ingress_port: 8099
 panel_icon: mdi:food
 panel_title: Meal Planner
+
+# API access (if you later want to call HA APIs from inside the add-on)
 homeassistant_api: true
 hassio_api: true
 
+# Build base images (required if your Dockerfile uses ARG BUILD_FROM / FROM $BUILD_FROM)
+build_from:
+  amd64: ghcr.io/home-assistant/amd64-base:3.20
+  aarch64: ghcr.io/home-assistant/aarch64-base:3.20
+  armv7: ghcr.io/home-assistant/armv7-base:3.20
+  armhf: ghcr.io/home-assistant/armhf-base:3.20
+
+# Expose port (optional for debugging; Ingress does not require host port mapping)
 ports:
   8099/tcp: 8099
+ports_description:
+  8099/tcp: "Meal Planner Web UI/API (Ingress uses this internally; external mapping optional)"
 
+# Persist data (SQLite DB stored in /data)
+map:
+  - data:rw
+
+# Add-on options exposed in UI
 options:
   timezone: "Europe/London"
   default_slots:
     - breakfast
     - lunch
     - dinner
+  default_servings: 2
+  week_starts_on: "monday"
+  units_mode: "metric"
+  enable_external_port: false
+
+# Validate options
 schema:
   timezone: str
   default_slots:
     - str
+  default_servings: int(1,50)
+  week_starts_on: list(monday|sunday)
+  units_mode: list(metric|imperial)
+  enable_external_port: bool
 
-map:
-  - data:rw
-
+# Environment variables available inside container (your app can read these)
 environment:
   LOG_LEVEL: info
+
+# Recommended settings
+watchdog: "http://[HOST]:8099/health"
